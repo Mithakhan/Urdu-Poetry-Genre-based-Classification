@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'API.dart';
 import 'dart:convert';
@@ -11,52 +10,59 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String url;
-
-  var Data;
-
-  String DataText = 'Prediction will be here';
+  final TextEditingController _controller = TextEditingController();
+  Future<Poetry>? _futureAlbum;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Urdu Poetry Classification'),
-        ),
-        body: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: TextField(
-                
-                onChanged: (value) {
-                  url = 'http://127.0.0.1:12345/predict/'+value.toString();
-                },
-                decoration: InputDecoration(
-                    hintText: 'Put your poetry here',
-                    suffixIcon: IconButton(
-                        onPressed: () async {
-                          Data = await getdata(url);
-                          print("Data is: "+Data);
-                          setState(() {
-                            DataText = Data;
-                          });
-                        },
-                        icon: Icon(Icons.search)
-                        )),
-              ),
+        home: Scaffold(
+            appBar: AppBar(
+              title: Center(child: Text('Urdu Poetry Classification')),
             ),
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Text(
-               ( DataText??'Default value'),
-                style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+            body: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(8.0),
+              child:
+                  (_futureAlbum == null) ? buildColumn() : buildFutureBuilder(),
+            )));
+  }
+
+  Column buildColumn() {
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+                hintText: 'Put your poetry here',
+                suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _futureAlbum =
+                            makeprediction(_controller.text.toString());
+                      });
+                    },
+                    icon: Icon(Icons.search))),
+          ),
         ),
-      ),
+      ],
+    );
+  }
+
+  FutureBuilder<Poetry> buildFutureBuilder() {
+    return FutureBuilder<Poetry>(
+      future: _futureAlbum,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return Text(snapshot.data!.label);
+        } else if (snapshot.hasError) {
+          return Text('${snapshot.error}');
+        }
+
+        return const CircularProgressIndicator();
+      },
     );
   }
 }
